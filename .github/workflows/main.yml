@@ -1,0 +1,53 @@
+name: Boreas-BOT CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  quality-assurance:
+    runs-on: ubuntu-latest
+    steps:
+    - name:  Checkout do Código
+      uses: actions/checkout@v4
+    - name:  Configurar Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - name: ?? Instalar Dependências
+      run: npm ci
+    - name: ??? Auditoria de Segurança
+      run: npm audit --audit-level=critical
+    - name: ?? Build & Type Check
+      run: npx tsc --noEmit
+    - name: ?? Testes Automatizados
+      run: npm test -- --verbose
+      env:
+        NODE_ENV: test
+
+  deploy:
+    needs: quality-assurance
+    if: github.ref == 'refs/heads/main' && github.repository == 'Marcelol090/Boreas-BOT'
+    runs-on: ubuntu-latest
+    steps:
+    - name: ?? Checkout do Código
+      uses: actions/checkout@v4
+    - name: ?? Configurar Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - name: ?? Instalar Dependências
+      run: npm ci
+    - name: ?? Executar Deploy de Comandos
+      run: npm run deploy
+      env:
+        NODE_ENV: production
+        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
+        GUILD_ID: ${{ secrets.GUILD_ID }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
